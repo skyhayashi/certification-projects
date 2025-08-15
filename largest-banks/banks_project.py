@@ -1,3 +1,7 @@
+"""
+ETL Pipeline for the Largest Banks by Market Cap
+"""
+
 # Libraries
 import requests
 from bs4 import BeautifulSoup
@@ -14,16 +18,20 @@ table_name = "Largest_banks"
 exchange_rate_csv_path = "./exchange_rate.csv"
 output_csv_path = "./Largest_banks_data.csv"
 
-# Log the progress of the code
 def log_progress(message):
+  """
+  Log the progress of the code
+  """
   timestamp_format = "%Y-%h-%d-%H:%M:%S"
   now = datetime.now()
   timestamp = now.strftime(timestamp_format)
   with open("./code_log.txt", "a") as f:
   f.write(timestamp + " : " + message + "\n")
 
-# Extract the tabular information from the given URL and save it to a dataframe
 def extract(url, table_attribs):
+  """
+  Extract the tabular information from the given URL and save it to a dataframe
+  """
   html_page = requests.get(url).text
   data = BeautifulSoup(html_page, "html.parser")
   df = pd.DataFrame(columns=table_attribs)
@@ -43,25 +51,34 @@ def extract(url, table_attribs):
   df["MC_USD_Billion"] = pd.to_numeric(df["MC_USD_Billion"], errors="coerce")
   return df
 
-# Transform the dataframe by adding columns for market capitalization in GBP, EUR, and INR, rounded to 2 decimals, based on the exchange rate information shared as a CSV file
 def transform(df, csv_path):
+  """
+  Transform the dataframe by adding columns for market capitalization in GBP, EUR, and INR, rounded to
+  2 decimals, based on the exchange rate information shared as a CSV file
+  """
   dataframe = pd.read_csv(csv_path)
   exchange_rate = dataframe.set_index("Currency").to_dict()["Rate"]
-  df["MC_GBP_Billion"] = [np.round(x*exchange_rate["GBP"],2) for x in df["MC_USD_Billion"]]
-  df["MC_EUR_Billion"] = [np.round(x*exchange_rate["EUR"],2) for x in df["MC_USD_Billion"]]
-  df["MC_INR_Billion"] = [np.round(x*exchange_rate["INR"],2) for x in df["MC_USD_Billion"]]
+  df["MC_GBP_Billion"] = [np.round(x * exchange_rate["GBP"], 2) for x in df["MC_USD_Billion"]]
+  df["MC_EUR_Billion"] = [np.round(x * exchange_rate["EUR"], 2) for x in df["MC_USD_Billion"]]
+  df["MC_INR_Billion"] = [np.round(x * exchange_rate["INR"], 2) for x in df["MC_USD_Billion"]]
   return df
 
-# Load the transformed dataframe to an output CSV file
 def load_to_csv(df, output_path):
+  """
+  Load the transformed dataframe to an output CSV file
+  """
   df.to_csv(output_path)
 
-# Load the transformed dataframe to an SQL database server as a table
 def load_to_db(df, sql_connection, table_name):
+  """
+  Load the transformed dataframe to an SQL database server as a table
+  """
   df.to_sql(table_name, sql_connection, if_exists="replace", index=False)
 
-# Run queries on the database
 def run_query(query_statement, sql_connection):
+  """
+  Run queries on the database
+  """
   print(query_statement)
   query_output = pd.read_sql(query_statement, sql_connection)
   print(query_output)
